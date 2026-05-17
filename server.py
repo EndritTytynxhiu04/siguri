@@ -1,6 +1,12 @@
 import socket
 import struct
 import os
+from rsa_utils import (
+    generate_rsa_key_pair,
+    serialize_public_key,
+    load_public_key,
+    decrypt_aes_key
+)
 from aes_utils import generate_aes_key, encrypt_data, decrypt_data
 
 HOST = "127.0.0.1"
@@ -9,6 +15,11 @@ SERVER_DIR = "server_files"
 
 if not os.path.exists(SERVER_DIR):
     os.makedirs(SERVER_DIR)
+
+# RSA KEYS
+server_private_key, server_public_key = generate_rsa_key_pair()
+
+print("[+] Server RSA key pair generated.")   
 
 def send_msg(sock, msg):
     msg = struct.pack('>I', len(msg)) + msg
@@ -32,6 +43,14 @@ def recvall(sock, n):
 
 def handle_client(client_socket, address):
     print(f"\n[+] New connection from {address}")
+
+    client_public_pem = recv_msg(client_socket)
+    client_public_key = load_public_key(client_public_pem)
+
+    server_public_pem = serialize_public_key(server_public_key)
+    send_msg(client_socket, server_public_pem)
+
+    print("[+] RSA public keys exchanged successfully.")
     
     try:
         # Receive the command from the client
@@ -50,7 +69,13 @@ def handle_client(client_socket, address):
             print(f"[*] Preparing to receive file: {filename}")
             
             # Receive AES key and Encrypted Data
-            aes_key = recv_msg(client_socket)
+            encrypted_aes_key = recv_msg(client_socket)
+            aes_key = decrypt_aes_key(
+            encrypted_aes_key,
+            server_private_key
+            )
+
+            print("[+] AES key decrypted successfully.")
             encrypted_data = recv_msg(client_socket)
             
             # Decrypt Data
