@@ -19,6 +19,32 @@ Duke kombinuar shpejtesine dhe efikasitetin e enkriptimit simetrik (AES) per tra
 ### 1. Kriptografia dhe Siguria
 * **Enkriptimi Simetrik (AES-256):** Cdo fajll qe transferohet enkriptohet duke perdorur algoritmin AES ne modin CBC (Cipher Block Chaining). Kjo siguron qe te dhenat jane te palexueshme per kedo qe i pergjon ne rrjet.
 * **Enkriptimi Asimetrik (RSA-2048):** Celesat simetrik AES nuk dergohen kurre te pambrojtur. Ata enkriptohen me celesat publik RSA te marresit perpara transferimit.
+## 🔐 Moduli RSA dhe Shkëmbimi i Sigurt i Çelësave (`rsa_utils.py`)
+
+Ky modul implementon shtresën e kriptografisë asimetrike të sistemit dhe është përgjegjës për sigurinë e shkëmbimit të çelësave AES dhe autentifikimin e komunikimit ndërmjet Klientit dhe Serverit.
+
+### 📌 Funksionalitetet Kryesore
+
+- Gjenerimi i RSA Public/Private Key Pairs (RSA-2048)
+- Menaxhimi dhe serializimi i çelësave RSA
+- Shkëmbimi i Public Keys ndërmjet Klientit dhe Serverit
+- Enkriptimi i AES Session Key me RSA Public Key
+- Dekriptimi i AES Session Key me RSA Private Key
+- Krijimi i Nënshkrimeve Digjitale (Digital Signatures)
+- Verifikimi i Nënshkrimeve Digjitale
+- Integrimi me modulin `aes_utils.py`
+
+### 📌 Si Funksionon
+
+1. Serveri dhe Klienti gjenerojnë RSA Key Pairs në startup.
+2. Ata shkëmbejnë vetëm Public Keys përmes socket communication.
+3. Klienti gjeneron një AES Session Key për enkriptimin e fajllit.
+4. AES key enkriptohet me RSA Public Key të Serverit.
+5. Vetëm Serveri mund ta dekriptojë AES key duke përdorur RSA Private Key.
+6. Fajlli enkriptohet me AES dhe transferohet në mënyrë të sigurt.
+7. SHA-256 përdoret për integritetin e fajllit.
+8. RSA Digital Signatures përdoren për autentifikim dhe verifikim.
+
 * **Integriteti dhe Autentifikimi (SHA-256 & Nenshkrimet Digjitale):** Para dergimit, fajlli kalon neper nje funksion hash (SHA-256). Ky hash me pas nenshkruhet me celesin privat RSA te derguesit, duke i garantuar marresit qe fajlli nuk eshte ndryshuar dhe qe vjen pikerisht nga burimi i duhur.
 
 ### 2. Arkitektura e Rrjetit dhe Aplikacionit
@@ -49,14 +75,16 @@ Projekti eshte ndare ne disa module per te mbajtur kodin te paster dhe te menaxh
 
 ## 🛠️ Udhezuesi i Instalimit
 
-Per te ekzekutuar kete projekt, sigurohuni qe keni te instaluar **Python 3**. Gjithashtu, per shkak se Python nuk vjen me mbeshtetje te plote per RSA dhe AES nga fabrika, ju duhet te instaloni librarine e sigurise `pycryptodome`.
+Per te ekzekutuar kete projekt, sigurohuni qe keni te instaluar **Python 3**. Gjithashtu, per shkak se Python nuk vjen me mbeshtetje te plote per RSA dhe AES nga fabrika, ju duhet te instaloni librarie e sigurise `pycryptodome` dhe `cryptography`.
 
 Hapni terminalin (Command Prompt / PowerShell / Bash) dhe shkruani:
 
 ```bash
 pip install pycryptodome
 ```
-
+```bash
+pip install cryptography
+```
 ---
 
 ## 💻 Udhezuesi i Perdorimit (Testimi)
