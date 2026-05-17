@@ -1,6 +1,12 @@
 import socket
 import os
 import struct
+from rsa_utils import (
+    generate_rsa_key_pair,
+    serialize_public_key,
+    load_public_key,
+    encrypt_aes_key
+)
 from aes_utils import generate_aes_key, encrypt_data, decrypt_data, generate_hash
 
 HOST = "127.0.0.1"
@@ -9,6 +15,10 @@ CLIENT_DIR = "client_files"
 
 if not os.path.exists(CLIENT_DIR):
     os.makedirs(CLIENT_DIR)
+
+# RSA KEYS
+client_private_key, client_public_key = generate_rsa_key_pair()
+print("[+] Client RSA key pair generated.")
 
 def send_msg(sock, msg):
     msg = struct.pack('>I', len(msg)) + msg
@@ -52,14 +62,31 @@ def upload_file():
     try:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((HOST, PORT))
+
+        # Send client public key
+        client_public_pem = serialize_public_key(client_public_key)
+        send_msg(client_socket, client_public_pem)
+
+        # Receive server public key
+        server_public_pem = recv_msg(client_socket)
+        server_public_key = load_public_key(server_public_pem)
+
+        print("[+] RSA public keys exchanged successfully.")
         
         # 1. Send Command and Filename
         send_msg(client_socket, f"UPLOAD|{filename}".encode('utf-8'))
         
         # 2. Send AES Key and Encrypted Data 
         # (Member 2 will add RSA encryption to this aes_key later)
-        send_msg(client_socket, aes_key)
+        encrypted_aes_key = encrypt_aes_key(
+        aes_key,
+        server_public_key
+        )
+
+        send_msg(client_socket, encrypted_aes_key)
         send_msg(client_socket, encrypted_data)
+
+        print("[+] AES key encrypted with RSA public key.")
         
         # Wait for Server Response
         response = recv_msg(client_socket)
