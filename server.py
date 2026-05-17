@@ -5,9 +5,10 @@ from rsa_utils import (
     generate_rsa_key_pair,
     serialize_public_key,
     load_public_key,
-    decrypt_aes_key
+    decrypt_aes_key,
+    verify_hash_signature
 )
-from aes_utils import generate_aes_key, encrypt_data, decrypt_data
+from aes_utils import generate_aes_key, encrypt_data, decrypt_data, generate_hash
 
 HOST = "127.0.0.1"
 PORT = 5000
@@ -77,10 +78,26 @@ def handle_client(client_socket, address):
 
             print("[+] AES key decrypted successfully.")
             encrypted_data = recv_msg(client_socket)
+            signature = recv_msg(client_socket)
             
             # Decrypt Data
             file_data = decrypt_data(encrypted_data, aes_key)
             
+            received_hash = generate_hash(file_data)
+
+            is_valid = verify_hash_signature(
+            received_hash,
+            signature,
+            client_public_key
+            )
+
+            if is_valid:
+                print("[+] Digital signature verified successfully.")
+            else:
+                print("[-] Signature verification failed.")
+                send_msg(client_socket, b"ERROR: Signature verification failed.")
+                return
+
             # File Saving Logic
             with open(filepath, "wb") as f:
                 f.write(file_data)
